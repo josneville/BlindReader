@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug import secure_filename
 from stitching import AlignImagesRansac
 import logging
+import Image
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 import urllib2
@@ -41,6 +42,9 @@ def upload():
             fileSplit = file.filename.rsplit('.')
             filename = "main" + str(idx + 1) + "." + fileSplit[len(fileSplit)-1]
             file.save(os.path.join(newpath, filename))
+            dst = Image.open(os.path.join(newpath, filename))
+            dst = dst.rotate(90)
+            dst.save(os.path.join(newpath, filename))
             filenames.append(filename)
     AlignImagesRansac(newpath, "main1.jpg", finishedpath)
     finishedFileList = os.listdir(finishedpath)
@@ -52,7 +56,7 @@ def upload():
     datagen, headers = multipart_encode({"image": open(ocrimage), "language": "en", "apikey": "rQn56HMQks"})
     req = urllib2.Request("http://api.ocrapiservice.com/1.0/rest/ocr", datagen, headers)
     # Actually do the request, and get the response
-    text urllib2.urlopen(req).read()
+    text = urllib2.urlopen(req).read()
     return text, 200
 
 if __name__ == '__main__':
