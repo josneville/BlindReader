@@ -6,7 +6,9 @@ from stitching import AlignImagesRansac
 import logging
 import stitching
 import Image
-import pytesseract
+import pyocr
+import pyocr.builders
+
 
 UPLOAD_FOLDER = './uploads'
 
@@ -45,13 +47,16 @@ def upload():
     finishedFileList = [s.replace('.JPG', '') for s in finishedFileList]
     finishedFileList = [s.replace('main', '') for s in finishedFileList]
     finishedFileList = [int(numeric_string) for numeric_string in finishedFileList] 
-    return finishedpath + "/main" + str(max(finishedFileList)) + ".jpg", 200
-
-@app.route('/test', methods=["GET"])
-def test():
-    args = ['./uploads/test', '1.jpg', '.uploads/test']
-    AlignImagesRansac(args)
-    return "Success", 200
+    ocrimage = finishedpath + "/" + str(max(finishedFileList)) + ".JPG"
+    tools = pyocr.get_available_tools()
+    tool = tools[0]
+    langs = tool.get_available_languages()
+    print("Available languages: %s" % ", ".join(langs))
+    lang = langs[0]
+    txt = tool.image_to_string(Image.open(ocrimage),
+                           lang=lang,
+                           builder=pyocr.builders.TextBuilder())
+    return text, 200
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=int(os.getenv('VCAP_APP_PORT', '1000')))
