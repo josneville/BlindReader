@@ -4,11 +4,12 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug import secure_filename
 from stitching import AlignImagesRansac
 import logging
-import stitching
-import Image
-import pyocr
-import pyocr.builders
+from poster.encode import multipart_encode
+from poster.streaminghttp import register_openers
+import urllib2
 
+# Register the streaming http handlers with urllib2
+register_openers()
 
 UPLOAD_FOLDER = './uploads'
 
@@ -48,14 +49,10 @@ def upload():
     finishedFileList = [s.replace('main', '') for s in finishedFileList]
     finishedFileList = [int(numeric_string) for numeric_string in finishedFileList] 
     ocrimage = finishedpath + "/" + str(max(finishedFileList)) + ".JPG"
-    tools = pyocr.get_available_tools()
-    tool = tools[0]
-    langs = tool.get_available_languages()
-    print("Available languages: %s" % ", ".join(langs))
-    lang = langs[0]
-    txt = tool.image_to_string(Image.open(ocrimage),
-                           lang=lang,
-                           builder=pyocr.builders.TextBuilder())
+    datagen, headers = multipart_encode({"image": open(ocrimage), "language": "en", "apikey": "rQn56HMQks"})
+    req = urllib2.Request("http://api.ocrapiservice.com/1.0/rest/ocr", datagen, headers)
+    # Actually do the request, and get the response
+    text urllib2.urlopen(req).read()
     return text, 200
 
 if __name__ == '__main__':

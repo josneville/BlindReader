@@ -340,6 +340,7 @@ class AlignImagesRansac():
     
             # Write out the current round
             final_filename = "%s/%d.JPG" % (self.output_dir, round)
+            print "yo"
             cv2.imwrite(final_filename, final_img)
     
             return self.stitchImages(final_img, round+1)
