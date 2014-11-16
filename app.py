@@ -1,4 +1,5 @@
 import os
+import cv2
 import random, string
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from werkzeug import secure_filename
@@ -8,6 +9,7 @@ import Image
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 import urllib2
+import subprocess
 
 # Register the streaming http handlers with urllib2
 register_openers()
@@ -27,8 +29,8 @@ def index():
 
 
 # Route that will process the file upload
-@app.route('/upload', methods=['POST'])
-def upload():
+@app.route('/uploadImages', methods=['POST'])
+def uploadImage():
     # Get the name of the uploaded files
     uploaded_files = request.files.getlist("file[]")
     filenames = []
@@ -51,7 +53,7 @@ def upload():
     finishedFileList = [s.replace('.jpg', '') for s in finishedFileList]
     finishedFileList = [s.replace('.JPG', '') for s in finishedFileList]
     finishedFileList = [s.replace('main', '') for s in finishedFileList]
-    finishedFileList = [int(numeric_string) for numeric_string in finishedFileList] 
+    finishedFileList = [int(numeric_string) for numeric_string in finishedFileList]
     ocrimage = finishedpath + "/" + str(max(finishedFileList)) + ".JPG"
     datagen, headers = multipart_encode({"image": open(ocrimage), "language": "en", "apikey": "rQn56HMQks"})
     req = urllib2.Request("http://api.ocrapiservice.com/1.0/rest/ocr", datagen, headers)
@@ -59,5 +61,39 @@ def upload():
     text = urllib2.urlopen(req).read()
     return text, 200
 
+@app.route('/uploadVideo', methods=['POST'])
+def uploadVideo():
+    uploadedVideo = request.files.getlist("file[]")
+    randomString = ''.join(random.choice(string.lowercase) for i in range(10))
+    newpath = app.config['UPLOAD_FOLDER'] + "/" + randomString
+    videopath = newpath + "/Video"
+    startpath = newpath + "/Initial"
+    finishedpath = newpath + "/Finished"
+
+    os.makedirs(newpath)
+    os.makedirs(videopath)
+    os.makedirs(startpath)
+    os.makedirs(finishedpath)
+
+    uploadedVideo[0].save(os.path.join(videopath, "video.mp4"))
+    command = "ffmpeg -i "+os.path.join(videopath, "video.mp4")+" -f image2 -r 1 "+startpath+"/main%2d.jpg"
+    p = subprocess.call(command, shell=True)
+
+
+    AlignImagesRansac(startpath, "main01.jpg", finishedpath)
+    finishedFileList = os.listdir(finishedpath)
+    finishedFileList = [s.replace('.jpg', '') for s in finishedFileList]
+    finishedFileList = [s.replace('.JPG', '') for s in finishedFileList]
+    finishedFileList = [s.replace('main', '') for s in finishedFileList]
+    finishedFileList = [int(numeric_string) for numeric_string in finishedFileList]
+    ocrimage = finishedpath + "/" + str(max(finishedFileList)) + ".JPG"
+    datagen, headers = multipart_encode({"image": open(ocrimage), "language": "en", "apikey": "rQn56HMQks"})
+    req = urllib2.Request("http://api.ocrapiservice.com/1.0/rest/ocr", datagen, headers)
+    # Actually do the request, and get the response
+    text = urllib2.urlopen(req).read()
+    return text, 200
+
+
+    return "Success", 200
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=int(os.getenv('VCAP_APP_PORT', '1000')))
