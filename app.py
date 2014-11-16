@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug import secure_filename
 from stitching import AlignImagesRansac
 import logging
-import Image
+from PIL import Image
 from poster.encode import multipart_encode
 from poster.streaminghttp import register_openers
 import urllib2
@@ -81,6 +81,7 @@ def uploadVideo():
 
 
     AlignImagesRansac(startpath, "main01.jpg", finishedpath)
+    print "Alignment Finished"
     finishedFileList = os.listdir(finishedpath)
     finishedFileList = [s.replace('.jpg', '') for s in finishedFileList]
     finishedFileList = [s.replace('.JPG', '') for s in finishedFileList]
@@ -96,4 +97,4 @@ def uploadVideo():
 
     return "Success", 200
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=int(os.getenv('VCAP_APP_PORT', '1000')))
+	app.run(host='0.0.0.0', port=80)
